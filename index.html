@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>일본 연립내각 시뮬레이터</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <style>
+        @font-face {
+            font-family: 'KimJeongWonSMiss';
+            src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/2507-1@1.0/Griun_Kimjungwon-Rg.woff2') format('woff2');
+            font-weight: normal;
+            font-display: swap;
+        }
+        body {
+            font-family: 'KimJeongWonSMiss', 'Inter', 'Noto Sans JP', sans-serif;
+            background: #0F172A; /* Slate 900 */
+            background-image: radial-gradient(circle at top left, rgba(59, 130, 246, 0.2), transparent 40%),
+                              radial-gradient(circle at bottom right, rgba(236, 72, 153, 0.2), transparent 40%);
+            min-height: 100vh;
+        }
+
+        .glass-card {
+            background: rgba(30, 41, 59, 0.5); /* Slate 800 with opacity */
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 1rem; /* rounded-xl */
+        }
+
+        .party-block {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+            color: white;
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.4);
+        }
+
+        .party-block:hover {
+            transform: translateY(-5px) scale(1.03);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+
+        .progress-bar-fill {
+            transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .majority-line {
+            position: absolute;
+            top: -8px;
+            bottom: -8px;
+            border-left: 2px dashed rgba(251, 146, 60, 0.8); /* Orange 400 */
+            z-index: 10;
+        }
+
+        .majority-text {
+            position: absolute;
+            top: -32px;
+            transform: translateX(-50%);
+            background-color: #fb923c; /* Orange 400 */
+            color: #431407; /* Orange 950 */
+            padding: 2px 8px;
+            border-radius: 9999px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+        
+        #coalition-parties-container:empty::after {
+            content: '정당을 클릭하여 연립을 구성하세요';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #64748B; /* Slate 500 */
+            font-size: 0.875rem;
+        }
+    </style>
+</head>
+<body class="p-4 sm:p-6 md:p-8">
+
+    <div class="max-w-7xl mx-auto">
+        <header class="text-center mb-8">
+            <h1 class="text-4xl sm:text-5xl font-black text-white mb-2 tracking-tight">연립내각 시뮬레이터</h1>
+            <p class="text-lg text-slate-400">일본 중의원 의석으로 과반(233석)을 만들어보세요.</p>
+        </header>
+
+        <!-- Coalition Status -->
+        <div class="glass-card p-6 mb-8 sticky top-4 z-20 shadow-2xl">
+            <div class="flex flex-col sm:flex-row justify-between items-center gap-4">
+                <div class="text-center sm:text-left">
+                    <h2 class="text-sm font-medium text-indigo-300 uppercase tracking-wider">연립 의석</h2>
+                    <p class="text-4xl font-bold text-white">
+                        <span id="current-seats">0</span><span class="text-2xl text-slate-400 font-medium"> / 465</span>
+                    </p>
+                </div>
+                <div id="majority-status" class="px-5 py-2 rounded-full text-lg font-bold transition-all duration-300">
+                    과반수 미달
+                </div>
+            </div>
+            <div class="mt-6">
+                <div class="w-full bg-slate-700 rounded-full h-4 relative">
+                    <div id="progress-bar" class="bg-gradient-to-r from-sky-400 to-indigo-500 h-4 rounded-full progress-bar-fill"></div>
+                    <div class="majority-line" style="left: calc(233 / 465 * 100%);">
+                         <span class="majority-text" style="left: 100%;">과반 233석</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            
+            <!-- Available Parties -->
+            <div class="glass-card p-6">
+                <div class="flex justify-between items-center mb-4 pb-4 border-b border-white/10">
+                    <h2 class="text-2xl font-bold text-white">참여 정당</h2>
+                    <button id="reset-button" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg transition-colors flex items-center gap-2">
+                        <i class="fa-solid fa-arrow-rotate-left"></i> 초기화
+                    </button>
+                </div>
+                <div id="available-parties-container" class="space-y-6">
+                    <!-- Party blocks will be inserted here by JavaScript -->
+                </div>
+            </div>
+
+            <!-- Coalition Parties -->
+            <div class="glass-card p-6">
+                <h2 class="text-2xl font-bold text-white mb-4 pb-4 border-b border-white/10">연립 구성</h2>
+                <div id="coalition-parties-container" class="min-h-[200px] relative p-2 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 content-start">
+                    <!-- Selected party blocks will move here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const parties = [
+                // 사진 참조 색상 적용 및 데이터 수정
+                { name: '자유민주당', seats: 192, color: '#d9272f', bloc: '여권' },
+                { name: '공명당', seats: 24, color: '#ea5550', bloc: '여권' },
+                { name: '입헌민주당', seats: 148, color: '#004098', bloc: '야권' },
+                { name: '일본유신회', seats: 38, color: '#19a158', bloc: '야권' },
+                { name: '국민민주당', seats: 28, color: '#0072b8', bloc: '야권' },
+                { name: '레이와 신센구미', seats: 9, color: '#e6007e', bloc: '야권' },
+                { name: '일본공산당', seats: 8, color: '#da1724', bloc: '야권' },
+                { name: '참정당', seats: 3, color: '#f37d21', bloc: '야권' },
+                { name: '일본보수당', seats: 3, color: '#00a0e9', bloc: '야권' },
+                // 사회민주당 삭제
+                { name: '자민계 무소속', seats: 4, color: '#455A64', bloc: '무소속' },
+                { name: '유지의 회', seats: 4, color: '#757575', bloc: '무소속' },
+                { name: '회파 미가입', seats: 4, color: '#BDBDBD', bloc: '무소속' } // 의석수 4석으로 수정
+            ];
+
+            const TOTAL_SEATS = 465;
+            const MAJORITY = 233;
+
+            const availableContainer = document.getElementById('available-parties-container');
+            const coalitionContainer = document.getElementById('coalition-parties-container');
+            const currentSeatsEl = document.getElementById('current-seats');
+            const majorityStatusEl = document.getElementById('majority-status');
+            const progressBarEl = document.getElementById('progress-bar');
+            const resetButton = document.getElementById('reset-button');
+
+            let selectedParties = [];
+            let partyElements = {};
+            let originalContainers = {};
+
+            function createPartyBlock(party, isCoalitionBlock = false) {
+                const partyEl = document.createElement('div');
+                partyEl.dataset.name = party.name;
+                
+                if (isCoalitionBlock) {
+                    partyEl.className = 'party-block p-2 rounded-lg flex flex-col items-center justify-center text-center shadow-lg';
+                    partyEl.innerHTML = `
+                        <span class="font-bold text-sm">${party.name}</span>
+                        <span class="font-black text-lg">${party.seats}</span>
+                    `;
+                } else {
+                     partyEl.className = 'party-block p-4 rounded-lg flex justify-between items-center shadow-lg';
+                     partyEl.innerHTML = `
+                        <span class="font-bold text-lg">${party.name}</span>
+                        <span class="font-black text-2xl">${party.seats}석</span>
+                    `;
+                }
+                partyEl.style.backgroundColor = party.color;
+                partyEl.addEventListener('click', () => togglePartySelection(party.name));
+                return partyEl;
+            }
+
+            function initialize() {
+                const blocs = [...new Set(parties.map(p => p.bloc))].sort((a,b) => a.localeCompare(b));
+                blocs.forEach(bloc => {
+                    const blocContainer = document.createElement('div');
+                    blocContainer.id = `bloc-${bloc}`;
+                    const blocTitle = document.createElement('h3');
+                    blocTitle.className = 'text-lg font-semibold mb-2 text-slate-300 px-1';
+                    blocTitle.textContent = bloc;
+                    
+                    const partiesWrapper = document.createElement('div');
+                    partiesWrapper.className = 'space-y-3';
+
+                    blocContainer.appendChild(blocTitle);
+                    blocContainer.appendChild(partiesWrapper);
+                    
+                    availableContainer.appendChild(blocContainer);
+                    originalContainers[bloc] = partiesWrapper;
+                });
+                
+                parties.forEach(party => {
+                    const partyEl = createPartyBlock(party);
+                    partyElements[party.name] = partyEl;
+                    originalContainers[party.bloc].appendChild(partyEl);
+                });
+
+                updateUI();
+            }
+            
+            function renderCoalition() {
+                coalitionContainer.innerHTML = '';
+                selectedParties.forEach(party => {
+                    const coalitionPartyEl = createPartyBlock(party, true);
+                    coalitionContainer.appendChild(coalitionPartyEl);
+                });
+            }
+
+            function togglePartySelection(partyName) {
+                const partyData = parties.find(p => p.name === partyName);
+                const isSelected = selectedParties.some(p => p.name === partyName);
+                const partyEl = partyElements[partyName];
+
+                if (isSelected) {
+                    selectedParties = selectedParties.filter(p => p.name !== partyName);
+                    originalContainers[partyData.bloc].appendChild(partyEl);
+                    partyEl.style.display = '';
+                } else {
+                    selectedParties.push(partyData);
+                    partyEl.style.display = 'none'; // Hide from original list
+                }
+                updateUI();
+            }
+
+            function updateUI() {
+                renderCoalition();
+
+                const currentSeats = selectedParties.reduce((sum, p) => sum + p.seats, 0);
+                const progressPercentage = (currentSeats / TOTAL_SEATS) * 100;
+
+                currentSeatsEl.textContent = currentSeats;
+                progressBarEl.style.width = `${progressPercentage}%`;
+
+                if (currentSeats >= MAJORITY) {
+                    majorityStatusEl.textContent = '과반수 달성!';
+                    majorityStatusEl.className = 'px-5 py-2 rounded-full text-lg font-bold bg-green-500 text-white shadow-lg shadow-green-500/30';
+                } else {
+                    majorityStatusEl.textContent = '과반수 미달';
+                    majorityStatusEl.className = 'px-5 py-2 rounded-full text-lg font-bold bg-amber-500 text-amber-900 shadow-lg shadow-amber-500/30';
+                }
+            }
+
+            function reset() {
+                selectedParties = [];
+                Object.values(partyElements).forEach(el => {
+                   el.style.display = ''; // Show all blocks in original list
+                });
+                updateUI();
+            }
+
+            resetButton.addEventListener('click', reset);
+
+            initialize();
+        });
+    </script>
+</body>
+</html>
+
+
+
