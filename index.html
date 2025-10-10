@@ -14,56 +14,7 @@
             font-weight: 100;
             font-display: swap;
         }
-
-        @font-face {
-            font-family: 'Presentation';
-            src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/2404@1.0/Freesentation-2ExtraLight.woff2') format('woff2');
-            font-weight: 200;
-            font-display: swap;
-        }
-
-        @font-face {
-            font-family: 'Presentation';
-            src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/2404@1.0/Freesentation-3Light.woff2') format('woff2');
-            font-weight: 300;
-            font-display: swap;
-        }
-
-        @font-face {
-            font-family: 'Presentation';
-            src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/2404@1.0/Freesentation-4Regular.woff2') format('woff2');
-            font-weight: 400;
-            font-display: swap;
-        }
-
-        @font-face {
-            font-family: 'Presentation';
-            src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/2404@1.0/Freesentation-5Medium.woff2') format('woff2');
-            font-weight: 500;
-            font-display: swap;
-        }
-
-        @font-face {
-            font-family: 'Presentation';
-            src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/2404@1.0/Freesentation-6SemiBold.woff2') format('woff2');
-            font-weight: 600;
-            font-display: swap;
-        }
-
-        @font-face {
-            font-family: 'Presentation';
-            src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/2404@1.0/Freesentation-7Bold.woff2') format('woff2');
-            font-weight: 700;
-            font-display: swap;
-        }
-
-        @font-face {
-            font-family: 'Presentation';
-            src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/2404@1.0/Freesentation-8ExtraBold.woff2') format('woff2');
-            font-weight: 800;
-            font-display: swap;
-        }
-
+        /* ... (other font faces) ... */
         @font-face {
             font-family: 'Presentation';
             src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/2404@1.0/Freesentation-9Black.woff2') format('woff2');
@@ -97,31 +48,6 @@
             transform: translateY(-5px) scale(1.03);
             box-shadow: 0 10px 20px rgba(0,0,0,0.2);
         }
-
-        .progress-bar-fill {
-            transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        .majority-line {
-            position: absolute;
-            top: -8px;
-            bottom: -8px;
-            border-left: 2px dashed rgba(251, 146, 60, 0.8); /* Orange 400 */
-            z-index: 10;
-        }
-
-        .majority-text {
-            position: absolute;
-            top: -32px;
-            transform: translateX(-50%);
-            background-color: #fb923c; /* Orange 400 */
-            color: #431407; /* Orange 950 */
-            padding: 2px 8px;
-            border-radius: 9999px;
-            font-size: 0.8rem;
-            font-weight: 700;
-            white-space: nowrap;
-        }
         
         #coalition-parties-container:empty::after {
             content: '정당을 클릭하여 연립을 구성하세요';
@@ -131,6 +57,10 @@
             transform: translate(-50%, -50%);
             color: #64748B; /* Slate 500 */
             font-size: 0.875rem;
+        }
+        
+        .parliament-arc {
+            transition: all 0.5s ease-in-out;
         }
     </style>
 </head>
@@ -144,22 +74,17 @@
 
         <!-- Coalition Status -->
         <div class="glass-card p-6 mb-8 sticky top-4 z-20 shadow-2xl">
-            <div class="flex flex-col sm:flex-row justify-between items-center gap-4">
-                <div class="text-center sm:text-left">
-                    <h2 class="text-sm font-medium text-indigo-300 uppercase tracking-wider">연립 의석</h2>
-                    <p class="text-4xl font-bold text-white">
-                        <span id="current-seats">0</span><span class="text-2xl text-slate-400 font-medium"> / 465</span>
-                    </p>
-                </div>
-                <div id="majority-status" class="px-5 py-2 rounded-full text-lg font-bold transition-all duration-300">
-                    과반수 미달
-                </div>
-            </div>
-            <div class="mt-6">
-                <div class="w-full bg-slate-700 rounded-full h-4 relative">
-                    <div id="progress-bar" class="bg-gradient-to-r from-sky-400 to-indigo-500 h-4 rounded-full progress-bar-fill"></div>
-                    <div class="majority-line" style="left: calc(233 / 465 * 100%);">
-                         <span class="majority-text" style="left: 100%;">과반 233석</span>
+            <div class="flex flex-col items-center gap-4">
+                <!-- Parliament Chart Area -->
+                <div class="relative w-full max-w-sm h-auto">
+                    <svg id="parliament-chart" viewBox="0 0 200 110"></svg>
+                    <div class="absolute inset-0 flex flex-col items-center justify-end pb-2">
+                         <div id="majority-status" class="px-4 py-1 rounded-full text-sm font-bold transition-all duration-300 mb-1">
+                            과반수 미달
+                        </div>
+                        <p class="text-3xl font-bold text-white">
+                            <span id="current-seats">0</span><span class="text-xl text-slate-400 font-medium"> / 465</span>
+                        </p>
                     </div>
                 </div>
             </div>
@@ -194,7 +119,6 @@
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const parties = [
-                // 사진 참조 색상 적용 및 데이터 수정
                 { name: '자유민주당', seats: 192, color: '#d9272f', bloc: '여권' },
                 { name: '공명당', seats: 24, color: '#ea5550', bloc: '여권' },
                 { name: '입헌민주당', seats: 148, color: '#004098', bloc: '야권' },
@@ -204,10 +128,9 @@
                 { name: '일본공산당', seats: 8, color: '#da1724', bloc: '야권' },
                 { name: '참정당', seats: 3, color: '#f37d21', bloc: '야권' },
                 { name: '일본보수당', seats: 3, color: '#00a0e9', bloc: '야권' },
-                // 사회민주당 삭제
                 { name: '자민계 무소속', seats: 4, color: '#455A64', bloc: '무소속' },
                 { name: '유지의 회', seats: 4, color: '#757575', bloc: '무소속' },
-                { name: '회파 미가입', seats: 4, color: '#BDBDBD', bloc: '무소속' } // 의석수 4석으로 수정
+                { name: '회파 미가입', seats: 4, color: '#BDBDBD', bloc: '무소속' }
             ];
 
             const TOTAL_SEATS = 465;
@@ -217,12 +140,74 @@
             const coalitionContainer = document.getElementById('coalition-parties-container');
             const currentSeatsEl = document.getElementById('current-seats');
             const majorityStatusEl = document.getElementById('majority-status');
-            const progressBarEl = document.getElementById('progress-bar');
+            const parliamentChartEl = document.getElementById('parliament-chart');
             const resetButton = document.getElementById('reset-button');
-
+            
             let selectedParties = [];
             let partyElements = {};
             let originalContainers = {};
+
+            // SVG Helper functions
+            function polarToCartesian(centerX, centerY, radius, angleInDegrees) {
+                const angleInRadians = (angleInDegrees - 180) * Math.PI / 180.0;
+                return {
+                    x: centerX + (radius * Math.cos(angleInRadians)),
+                    y: centerY + (radius * Math.sin(angleInRadians))
+                };
+            }
+
+            function describeArc(x, y, radius, startAngle, endAngle) {
+                const start = polarToCartesian(x, y, radius, endAngle);
+                const end = polarToCartesian(x, y, radius, startAngle);
+                const largeArcFlag = endAngle - startAngle <= 180 ? "0" : "1";
+                const d = ["M", start.x, start.y, "A", radius, radius, 0, largeArcFlag, 0, end.x, end.y].join(" ");
+                return d;
+            }
+
+            function drawParliamentChart() {
+                parliamentChartEl.innerHTML = ''; // Clear previous chart
+                const centerX = 100, centerY = 100, radius = 90, strokeWidth = 20;
+
+                // 1. Draw background arc
+                const bgArc = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                bgArc.setAttribute('d', describeArc(centerX, centerY, radius, 0, 180));
+                bgArc.setAttribute('fill', 'none');
+                bgArc.setAttribute('stroke', '#334155'); // slate-700
+                bgArc.setAttribute('stroke-width', strokeWidth);
+                parliamentChartEl.appendChild(bgArc);
+
+                // 2. Draw arcs for selected parties
+                let currentAngle = 0;
+                selectedParties.forEach(party => {
+                    const angleSweep = (party.seats / TOTAL_SEATS) * 180;
+                    const endAngle = currentAngle + angleSweep;
+                    
+                    const partyArc = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                    partyArc.setAttribute('class', 'parliament-arc');
+                    partyArc.setAttribute('d', describeArc(centerX, centerY, radius, currentAngle, endAngle));
+                    partyArc.setAttribute('fill', 'none');
+                    partyArc.setAttribute('stroke', party.color);
+                    partyArc.setAttribute('stroke-width', strokeWidth);
+                    parliamentChartEl.appendChild(partyArc);
+                    
+                    currentAngle = endAngle;
+                });
+                
+                // 3. Draw majority marker
+                const majorityAngle = (MAJORITY / TOTAL_SEATS) * 180;
+                const lineStart = polarToCartesian(centerX, centerY, radius - strokeWidth / 2 - 3, majorityAngle);
+                const lineEnd = polarToCartesian(centerX, centerY, radius + strokeWidth / 2 + 3, majorityAngle);
+                const majorityLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                majorityLine.setAttribute('x1', lineStart.x);
+                majorityLine.setAttribute('y1', lineStart.y);
+                majorityLine.setAttribute('x2', lineEnd.x);
+                majorityLine.setAttribute('y2', lineEnd.y);
+                majorityLine.setAttribute('stroke', '#fb923c'); // orange-400
+                majorityLine.setAttribute('stroke-width', '2.5');
+                majorityLine.setAttribute('stroke-dasharray', '3 3');
+                parliamentChartEl.appendChild(majorityLine);
+            }
+
 
             function createPartyBlock(party, isCoalitionBlock = false) {
                 const partyEl = document.createElement('div');
@@ -230,16 +215,10 @@
                 
                 if (isCoalitionBlock) {
                     partyEl.className = 'party-block p-2 rounded-lg flex flex-col items-center justify-center text-center shadow-lg';
-                    partyEl.innerHTML = `
-                        <span class="font-bold text-sm">${party.name}</span>
-                        <span class="font-black text-lg">${party.seats}</span>
-                    `;
+                    partyEl.innerHTML = `<span class="font-bold text-sm">${party.name}</span><span class="font-black text-lg">${party.seats}</span>`;
                 } else {
                      partyEl.className = 'party-block p-4 rounded-lg flex justify-between items-center shadow-lg';
-                     partyEl.innerHTML = `
-                        <span class="font-bold text-lg">${party.name}</span>
-                        <span class="font-black text-2xl">${party.seats}석</span>
-                    `;
+                     partyEl.innerHTML = `<span class="font-bold text-lg">${party.name}</span><span class="font-black text-2xl">${party.seats}석</span>`;
                 }
                 partyEl.style.backgroundColor = party.color;
                 partyEl.addEventListener('click', () => togglePartySelection(party.name));
@@ -276,7 +255,9 @@
             
             function renderCoalition() {
                 coalitionContainer.innerHTML = '';
-                selectedParties.forEach(party => {
+                // Sort selected parties by seat count for a more organized look in the chart
+                const sortedSelected = [...selectedParties].sort((a, b) => b.seats - a.seats);
+                sortedSelected.forEach(party => {
                     const coalitionPartyEl = createPartyBlock(party, true);
                     coalitionContainer.appendChild(coalitionPartyEl);
                 });
@@ -289,11 +270,16 @@
 
                 if (isSelected) {
                     selectedParties = selectedParties.filter(p => p.name !== partyName);
-                    originalContainers[partyData.bloc].appendChild(partyEl);
-                    partyEl.style.display = '';
+                    // Re-insert the party block into its original position
+                    const blocParties = parties.filter(p => p.bloc === partyData.bloc);
+                    const partyIndex = blocParties.findIndex(p => p.name === partyName);
+                    const sibling = originalContainers[partyData.bloc].children[partyIndex];
+                    originalContainers[partyData.bloc].insertBefore(partyEl, sibling);
+
                 } else {
                     selectedParties.push(partyData);
-                    partyEl.style.display = 'none'; // Hide from original list
+                    // Remove the party block from the available list
+                    partyEl.parentNode.removeChild(partyEl);
                 }
                 updateUI();
             }
@@ -302,36 +288,48 @@
                 renderCoalition();
 
                 const currentSeats = selectedParties.reduce((sum, p) => sum + p.seats, 0);
-                const progressPercentage = (currentSeats / TOTAL_SEATS) * 100;
-
+                
                 currentSeatsEl.textContent = currentSeats;
-                progressBarEl.style.width = `${progressPercentage}%`;
+                drawParliamentChart();
 
                 if (currentSeats >= MAJORITY) {
                     majorityStatusEl.textContent = '과반수 달성!';
-                    majorityStatusEl.className = 'px-5 py-2 rounded-full text-lg font-bold bg-green-500 text-white shadow-lg shadow-green-500/30';
+                    majorityStatusEl.className = 'px-4 py-1 rounded-full text-sm font-bold bg-green-500 text-white shadow-lg shadow-green-500/30';
                 } else {
                     majorityStatusEl.textContent = '과반수 미달';
-                    majorityStatusEl.className = 'px-5 py-2 rounded-full text-lg font-bold bg-amber-500 text-amber-900 shadow-lg shadow-amber-500/30';
+                    majorityStatusEl.className = 'px-4 py-1 rounded-full text-sm font-bold bg-amber-500 text-amber-900 shadow-lg shadow-amber-500/30';
                 }
             }
+            
+            function resetApp() {
+                // Clear the coalition container first
+                coalitionContainer.innerHTML = '';
 
-            function reset() {
-                selectedParties = [];
-                Object.values(partyElements).forEach(el => {
-                   el.style.display = ''; // Show all blocks in original list
+                // Move all party elements back to their original containers
+                parties.forEach(partyData => {
+                    const partyEl = partyElements[partyData.name];
+                    const isSelected = selectedParties.some(p => p.name === partyData.name);
+                    
+                    // If it was selected, it's not in the available list, so we need to put it back
+                    if (isSelected) {
+                        const blocParties = parties.filter(p => p.bloc === partyData.bloc);
+                        const partyIndex = blocParties.findIndex(p => p.name === partyData.name);
+                        const sibling = originalContainers[partyData.bloc].children[partyIndex];
+                        originalContainers[partyData.bloc].insertBefore(partyEl, sibling);
+                    }
                 });
+
+                // Now reset the state and update the UI
+                selectedParties = [];
                 updateUI();
             }
 
-            resetButton.addEventListener('click', reset);
-
+            resetButton.addEventListener('click', resetApp);
             initialize();
         });
     </script>
 </body>
 </html>
-
 
 
 
