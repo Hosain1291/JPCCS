@@ -119,18 +119,17 @@
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const parties = [
-                { name: '자유민주당', seats: 192, color: '#d9272f', bloc: '여권' },
-                { name: '공명당', seats: 24, color: '#ea5550', bloc: '야권' },
+                { name: '자유민주당', seats: 196, color: '#d9272f', bloc: '여권' },
                 { name: '입헌민주당', seats: 148, color: '#004098', bloc: '야권' },
-                { name: '일본유신회', seats: 38, color: '#19a158', bloc: '야권' },
-                { name: '국민민주당', seats: 28, color: '#0072b8', bloc: '야권' },
+                { name: '일본유신회', seats: 35, color: '#19a158', bloc: '야권' },
+                { name: '국민민주당', seats: 27, color: '#0072b8', bloc: '야권' },
+                { name: '공명당', seats: 24, color: '#ea5550', bloc: '야권' },
                 { name: '레이와 신센구미', seats: 9, color: '#e6007e', bloc: '야권' },
                 { name: '일본공산당', seats: 8, color: '#da1724', bloc: '야권' },
+                { name: '유지의 회', seats: 7, color: '#757575', bloc: '야권' },
                 { name: '참정당', seats: 3, color: '#f37d21', bloc: '야권' },
-                { name: '일본보수당', seats: 3, color: '#00a0e9', bloc: '야권' },
-                { name: '자민계 무소속', seats: 4, color: '#455A64', bloc: '무소속' },
-                { name: '유지의 회', seats: 4, color: '#757575', bloc: '무소속' },
-                { name: '회파 미가입', seats: 4, color: '#BDBDBD', bloc: '무소속' }
+                { name: '감세 일본', seats: 2, color: '#60A5FA', bloc: '야권' },
+                { name: '무소속', seats: 6, color: '#BDBDBD', bloc: '무소속' }
             ];
 
             const TOTAL_SEATS = 465;
@@ -178,7 +177,9 @@
 
                 // 2. Draw arcs for selected parties
                 let currentAngle = 0;
-                selectedParties.forEach(party => {
+                // Sort selected parties by seat count for a more organized look in the chart
+                const sortedSelected = [...selectedParties].sort((a, b) => b.seats - a.seats);
+                sortedSelected.forEach(party => {
                     const angleSweep = (party.seats / TOTAL_SEATS) * 180;
                     const endAngle = currentAngle + angleSweep;
                     
@@ -226,7 +227,17 @@
             }
 
             function initialize() {
-                const blocs = [...new Set(parties.map(p => p.bloc))].sort((a,b) => a.localeCompare(b));
+                // Sort parties by seat count descending for initial display
+                parties.sort((a, b) => b.seats - a.seats);
+
+                const blocs = [...new Set(parties.map(p => p.bloc))].sort((a,b) => {
+                    if (a === '여권') return -1;
+                    if (b === '여권') return 1;
+                    if (a === '야권') return -1;
+                    if (b === '야권') return 1;
+                    return 0;
+                });
+
                 blocs.forEach(bloc => {
                     const blocContainer = document.createElement('div');
                     blocContainer.id = `bloc-${bloc}`;
@@ -255,7 +266,6 @@
             
             function renderCoalition() {
                 coalitionContainer.innerHTML = '';
-                // Sort selected parties by seat count for a more organized look in the chart
                 const sortedSelected = [...selectedParties].sort((a, b) => b.seats - a.seats);
                 sortedSelected.forEach(party => {
                     const coalitionPartyEl = createPartyBlock(party, true);
@@ -270,15 +280,15 @@
 
                 if (isSelected) {
                     selectedParties = selectedParties.filter(p => p.name !== partyName);
-                    // Re-insert the party block into its original position
+                    
                     const blocParties = parties.filter(p => p.bloc === partyData.bloc);
                     const partyIndex = blocParties.findIndex(p => p.name === partyName);
+                    
                     const sibling = originalContainers[partyData.bloc].children[partyIndex];
                     originalContainers[partyData.bloc].insertBefore(partyEl, sibling);
 
                 } else {
                     selectedParties.push(partyData);
-                    // Remove the party block from the available list
                     partyEl.parentNode.removeChild(partyEl);
                 }
                 updateUI();
@@ -302,15 +312,12 @@
             }
             
             function resetApp() {
-                // Clear the coalition container first
                 coalitionContainer.innerHTML = '';
 
-                // Move all party elements back to their original containers
                 parties.forEach(partyData => {
                     const partyEl = partyElements[partyData.name];
                     const isSelected = selectedParties.some(p => p.name === partyData.name);
                     
-                    // If it was selected, it's not in the available list, so we need to put it back
                     if (isSelected) {
                         const blocParties = parties.filter(p => p.bloc === partyData.bloc);
                         const partyIndex = blocParties.findIndex(p => p.name === partyData.name);
@@ -319,7 +326,6 @@
                     }
                 });
 
-                // Now reset the state and update the UI
                 selectedParties = [];
                 updateUI();
             }
@@ -330,6 +336,4 @@
     </script>
 </body>
 </html>
-
-
 
